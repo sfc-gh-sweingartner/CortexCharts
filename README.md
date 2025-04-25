@@ -33,6 +33,9 @@ Your first task is to name your first dashboard.  You can create many dashboards
 In the table at the bottom is a list of every report saved.  Tick the box for the reports you want assembled onto this dasboard and click "Save Dashboard" 
 
 ### How to Deploy
-1) In Snowsight, click Projects > Streamlit > Create a Streamlit App
+1) In Snowsight, click Projects > Streamlit 
+2) Tick the drop downbox next to the blue "+ Streamlit App" and select "create from repository"
+3) Click "Create Git Repository"
+4) 
 2) Deploy it into any DB, Schema and use any WH
 3) 
