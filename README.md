@@ -32,10 +32,22 @@ Then use the navigaion menu on the left to open the Dashboard page
 Your first task is to name your first dashboard.  You can create many dashboards.  These dasboards are saved into the CORTEX_ANALYST_DASHBOARDS table
 In the table at the bottom is a list of every report saved.  Tick the box for the reports you want assembled onto this dasboard and click "Save Dashboard" 
 
-### How to Deploy
-1) In Snowsight, click Projects > Streamlit 
-2) Tick the drop downbox next to the blue "+ Streamlit App" and select "create from repository"
-3) Click "Create Git Repository"
-4) 
-2) Deploy it into any DB, Schema and use any WH
-3) 
+### How to Deploy (Alternatively download the files if you don't want to connect to Git) 
+1) In Snowsight, open a SQL worksheet and run this with ACCOUNTADMIN to allow your env to see this GIT project:
+    CREATE OR REPLACE API INTEGRATION git_sweingartner
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-sweingartner')
+    ENABLED = TRUE;
+3) click Projects > Streamlit
+4) Tick the drop downbox next to the blue "+ Streamlit App" and select "create from repository"
+5) Click "Create Git Repository"
+6) In the Repository URL field, enter: https://github.com/sfc-gh-sweingartner/CortexCharts
+7) In the API Integration drop down box, choose GIT_SWEINGARTNER
+8) Deploy it into any DB, Schema and use any WH
+9) Click Home.py then "Select File"
+10) Click create
+11) Open the code editor panel and edit which yaml file (i.e. semantic model) that the solution is looking at.  You will find the line to alter at line 39 of the 1_Cortex_Analyst.py file
+
+Run the App.  
+
+Reach out to stephen.weingartner@snowflake.com with any issues.  
