@@ -1,8 +1,38 @@
-# CortexCharts
+# Improved Charts for Cortex Analyst
 
-##This proj
+##This Streamlit in Snowflake app allows you to ask questions to Semantic Models in Snowflake.  You will receive nice looking charts and can assemble them into dashboards
 
-### Description
+### App Description & Usage
+This solution is an uplift to the out of the box exmample Cortex Analyst Streamlit in Snowflake chatbot as found here:  https://quickstarts.snowflake.com/guide/getting_started_with_cortex_analyst/index.html?index=..%2F..index#0   The largest flaw of that solution is that when you ask a question, you get data in a table fine but the charts rarely work well.   
 
+With this solution, there are 9 preconfigured chart templates and the correct one will automatically return based on how many date, text, and numeric columns exist in the dataset that was returned.  The logic for which chart applies is as follows.  
+![Chart Number Logic](/images/4.png)
 
-![second try](/images/1.png)
+Your first interaction with this application is quite similar to the Quickstart.  You ask a question and get a response.  What you will find is that the charts are better.  
+![Cortex Analyst Page](/images/2.png)
+
+If you like the chart that's returned and want to be able to run it again without calling Cortex Analyst, then click the button "Open in Designer"
+
+A few minor changes to this Cortex Analyst page are: 
+1) Semantic model warnings have been commented out
+2) The generic question of "What sort of questions can I ask" no longer runs automatically
+3) There is now a button to enable SQL to return without auto running it
+
+![Cortex Analyst Page](/images/1.png)
+Clicking the button on the Cortex Analyst Page opens up the same SQL Statement, table, and chart in the Report Designer page.  
+On this page, you can:
+1) Make minor changes to the SQL
+2) Make changes to the Altair chart code to further improve the chart.  (e.g. change the color, size of bubbles, chart name, etc...)   See the Altair project for guidance on what you can do.
+3) Provide a custom name to the report
+4) Override the prompt interpretation if you want to type your own description
+5) Save the report into a CORTEX_ANALYST_REPORTS table
+
+Then use the navigaion menu on the left to open the Dashboard page
+![Cortex Analyst Page](/images/6.png)
+Your first task is to name your first dashboard.  You can create many dashboards.  These dasboards are saved into the CORTEX_ANALYST_DASHBOARDS table
+In the table at the bottom is a list of every report saved.  Tick the box for the reports you want assembled onto this dasboard and click "Save Dashboard" 
+
+### How to Deploy
+1) In Snowsight, click Projects > Streamlit > Create a Streamlit App
+2) Deploy it into any DB, Schema and use any WH
+3) 
