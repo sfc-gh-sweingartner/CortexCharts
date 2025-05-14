@@ -216,13 +216,22 @@ def evaluate_chart_code(chart_code, df):
         # Use metadata-based chart if not using custom code
         if not st.session_state.use_custom_chart_code and hasattr(df, 'attrs') and 'chart_metadata' in df.attrs:
             chart = create_chart_from_metadata(df)
+            
+            # Special handling for KPI tiles
+            if isinstance(chart, dict) and chart.get("type") == "kpi_tiles":
+                # For KPI tiles, we need to render them explicitly
+                from utils.chart_utils import _render_kpi_tiles
+                st.subheader("KPI Tiles")
+                _render_kpi_tiles(chart["data"])
+                return None, None  # Return None to avoid duplicate rendering
+            
             if chart:
                 return chart, None
         
         # Use provided chart code
         try:
             # Create a namespace for the chart code
-            namespace = {"pd": pd, "alt": alt, "df": df_copy}
+            namespace = {"pd": pd, "alt": alt, "df": df_copy, "st": st}
             
             # Execute the chart code
             exec(chart_code, namespace)
@@ -231,6 +240,15 @@ def evaluate_chart_code(chart_code, df):
             if "create_chart" in namespace:
                 chart_function = namespace["create_chart"]
                 chart = chart_function(df_copy)
+                
+                # Special handling for KPI tiles
+                if isinstance(chart, dict) and chart.get("type") == "kpi_tiles":
+                    # For KPI tiles, we need to render them explicitly
+                    from utils.chart_utils import _render_kpi_tiles
+                    st.subheader("KPI Tiles")
+                    _render_kpi_tiles(chart["data"])
+                    return None, None  # Return None to avoid duplicate rendering
+                
                 return chart, None
             else:
                 error_msg = "Chart code must define a 'create_chart(df)' function."
