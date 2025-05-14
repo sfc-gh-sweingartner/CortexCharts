@@ -50,6 +50,8 @@ In the table at the bottom is a list of every report saved.  Tick the box for th
 
 Run the App.  
 
+Note that if you want to demo against the Synthea healthcare Dataset, refer to this Git and request a datashare: https://github.com/sfc-gh-sweingartner/synthea/tree/main
+
 Reach out to stephen.weingartner@snowflake.com with any issues.  
 
 ### Version History
