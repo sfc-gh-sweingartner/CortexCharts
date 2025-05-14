@@ -23,7 +23,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.chart_utils import (
     create_chart1, create_chart2, create_chart3, create_chart4,
-    create_chart5, create_chart6, create_chart7, create_chart8, create_chart9
+    create_chart5, create_chart6, create_chart7, create_chart8, create_chart9, create_chart10
 )
 
 # Set page config
@@ -37,6 +37,7 @@ st.set_page_config(
 # Each path points to a YAML file defining a semantic model
 AVAILABLE_SEMANTIC_MODELS_PATHS = [
     "SYNTHEA.SYNTHEA.SYNTHEA/synthea_joins_03.yaml",
+    "QUANTIUM_DEMO.TEXT2SQL.TEXT2SQL/fakesalesmap.yaml",
     "TELCO_NETWORK_OPTIMIZATION_PROD.RAW.DATA/telco_network_opt.yaml"
 ]
 API_ENDPOINT = "/api/v2/cortex/analyst/message"
@@ -413,8 +414,49 @@ def display_chart(df: pd.DataFrame, message_index: int) -> None:
         text_cols = [col for col in df_display.columns if col not in numeric_cols and col not in date_cols and 
                     (pd.api.types.is_string_dtype(df_display[col]) or pd.api.types.is_object_dtype(df_display[col]))]
 
+        # Debug information for column detection
+        print(f"DataFrame columns: {df_display.columns.tolist()}")
+        print(f"DataFrame dtypes: {df_display.dtypes}")
+        print(f"Detected numeric columns: {numeric_cols}")
+        print(f"Detected date columns: {date_cols}")
+        print(f"Detected text columns: {text_cols}")
+        print(f"Column type detection summary: date_cols={len(date_cols)}, text_cols={len(text_cols)}, numeric_cols={len(numeric_cols)}")
+        
+        # Special case for telco data pattern with cell_id_display, total_tickets, avg_sentiment
+        telco_columns = {'cell_id_display', 'total_tickets', 'avg_sentiment'}
+        if telco_columns.issubset(set(df_display.columns)):
+            print("Detected telco query pattern - forcing Chart 5")
+            chart_metadata = {
+                'chart5_columns': {
+                    'num_col1': 'total_tickets',
+                    'num_col2': 'avg_sentiment',
+                    'text_col': 'cell_id_display'
+                }
+            }
+            df_display.attrs['chart_metadata'] = chart_metadata
+            alt_chart = create_chart5(df_display, chart_metadata['chart5_columns'])
+            if alt_chart is not None:
+                return alt_chart
+
+        # Rule 10: Single row with 1-4 numeric columns (KPI Tiles)
+        if len(df_display) == 1 and len(numeric_cols) >= 1 and len(numeric_cols) <= 4 and len(text_cols) <= 1:
+            print("Rule 10 condition met: Creating KPI tiles for single row")
+            chart_metadata = {
+                'chart10_columns': {
+                    'numeric_cols': numeric_cols
+                }
+            }
+            df_display.attrs['chart_metadata'] = chart_metadata
+            
+            # Use chart_utils function to create KPI tiles
+            kpi_result = create_chart10(df_display, chart_metadata['chart10_columns'])
+            
+            # KPI tiles are directly rendered by the create_chart10 function
+            # We'll set alt_chart to a special value to indicate KPIs were rendered
+            alt_chart = "__KPI_RENDERED__"  # Special flag indicating KPIs were rendered
+
         # Rule 1: Dates: 1 Dimensions: 0  Numeric Metrics: 1
-        if len(date_cols) == 1 and len(text_cols) == 0 and len(numeric_cols) == 1:
+        elif len(date_cols) == 1 and len(text_cols) == 0 and len(numeric_cols) == 1:
             chart_metadata = {
                 'chart1_columns': {
                     'date_col': date_cols[0],
@@ -469,16 +511,26 @@ def display_chart(df: pd.DataFrame, message_index: int) -> None:
 
         # Rule 5: Dates: 0 Dimensions: 1  Numeric Metrics: 2
         elif len(date_cols) == 0 and len(text_cols) == 1 and len(numeric_cols) == 2:
-            chart_metadata = {
-                'chart5_columns': {
-                    'num_col1': numeric_cols[0],
-                    'num_col2': numeric_cols[1],
-                    'text_col': text_cols[0]
+            print("Rule 5 condition met: Attempting to create scatter chart")
+            try:
+                chart_metadata = {
+                    'chart5_columns': {
+                        'num_col1': numeric_cols[0],
+                        'num_col2': numeric_cols[1],
+                        'text_col': text_cols[0]
+                    }
                 }
-            }
-            df_display.attrs['chart_metadata'] = chart_metadata
-            # Use chart_utils function
-            alt_chart = create_chart5(df_display, chart_metadata['chart5_columns'])
+                print(f"Chart 5 metadata: {chart_metadata}")
+                df_display.attrs['chart_metadata'] = chart_metadata
+                # Use chart_utils function
+                alt_chart = create_chart5(df_display, chart_metadata['chart5_columns'])
+                if alt_chart is None:
+                    print("create_chart5 returned None")
+            except Exception as e:
+                print(f"Error in Rule 5 chart creation: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+                alt_chart = None
 
         # Rule 6: Dates: 0 Dimensions: 2  Numeric Metrics: 2
         elif len(date_cols) == 0 and len(text_cols) == 2 and len(numeric_cols) == 2:
@@ -543,7 +595,46 @@ def display_chart(df: pd.DataFrame, message_index: int) -> None:
         else:
             alt_chart = None
 
-        if alt_chart:
+        # Check alt_chart - important to check for __KPI_RENDERED__ first
+        if alt_chart == "__KPI_RENDERED__":
+            # KPI tiles were already rendered directly by create_chart10
+            # Just show the "Open in Designer" button
+            if st.button("Open in Designer", key=f"send_to_designer_{message_index}"):
+                # Same logic as above for transferring to Report Designer
+                if "report_transfer" not in st.session_state:
+                    st.session_state.report_transfer = {}
+                
+                # Extract SQL and prompt
+                sql_statement = ""
+                prompt = ""
+                for message in st.session_state.messages:
+                    if message["role"] == "analyst" and len(st.session_state.messages) - 1 == st.session_state.messages.index(message):
+                        for item in message["content"]:
+                            if item["type"] == "sql":
+                                sql_statement = item["statement"]
+                    elif message["role"] == "user" and len(st.session_state.messages) - 2 == st.session_state.messages.index(message):
+                        for item in message["content"]:
+                            if item["type"] == "text":
+                                prompt = item["text"]
+                
+                # Generate chart code for KPI tiles
+                from utils.chart_utils import generate_chart_code_for_dataframe
+                chart_code = generate_chart_code_for_dataframe(df_display)
+                
+                # Store data to be accessed by the Report Designer
+                st.session_state.report_transfer = {
+                    "df": df_display,
+                    "sql": sql_statement,
+                    "prompt": prompt,
+                    "timestamp": datetime.now().strftime("%Y%m%d%H%M%S"),
+                    "redirect": True,
+                    "chart_metadata": df_display.attrs.get('chart_metadata', {}),
+                    "chart_code": chart_code
+                }
+                
+                # Navigate to Report Designer
+                st.switch_page("pages/2_Report_Designer.py")
+        elif alt_chart:
             st.altair_chart(alt_chart, use_container_width=True)
             
             # Add "Open in Designer" button
