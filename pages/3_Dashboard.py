@@ -255,6 +255,35 @@ def render_chart(report):
             st.error(f"Missing chart code for report: {report['REPORT_NAME']}")
             return None
         
+        # Check for KPI tiles in metadata
+        if hasattr(df_copy, 'attrs') and 'chart_metadata' in df_copy.attrs:
+            metadata = df_copy.attrs['chart_metadata']
+            if 'chart10_columns' in metadata and len(df_copy) == 1:
+                # This is a KPI tile chart, handle it specially by importing the rendering function
+                try:
+                    from utils.chart_utils import create_chart10, _render_kpi_tiles
+                    numeric_cols = metadata['chart10_columns'].get('numeric_cols', [])
+                    if not numeric_cols and df_copy is not None:
+                        # Auto-detect numeric columns if not specified
+                        numeric_cols = [col for col in df_copy.columns if pd.api.types.is_numeric_dtype(df_copy[col])]
+                    
+                    # Create KPI data
+                    kpi_data = {
+                        "df": df_copy,
+                        "numeric_cols": numeric_cols,
+                        "labels": metadata['chart10_columns'].get('labels', {}),
+                        "n_cols": min(len(numeric_cols), 4)
+                    }
+                    
+                    # Render the KPIs directly
+                    _render_kpi_tiles(kpi_data)
+                    
+                    # Return special flag to indicate KPIs were rendered
+                    return "__KPI_RENDERED__"
+                except Exception as kpi_err:
+                    if st.session_state.debug_mode:
+                        st.error(f"Error rendering KPI tiles: {kpi_err}")
+        
         # Create local namespace for execution
         local_vars = {"pd": pd, "alt": alt, "df": df_copy, "json": json, "st": st}
         
@@ -290,6 +319,14 @@ def render_chart(report):
             # Then call the create_chart function if it exists
             if "create_chart" in local_vars:
                 chart = local_vars["create_chart"](df_copy)
+                
+                # Check if we got a KPI tiles result
+                if isinstance(chart, dict) and chart.get("type") == "kpi_tiles":
+                    # For KPI tiles, we need to render them explicitly
+                    from utils.chart_utils import _render_kpi_tiles
+                    _render_kpi_tiles(chart["data"])
+                    return "__KPI_RENDERED__"  # Special flag to skip Altair rendering
+                
                 if chart:
                     return chart
             else:
@@ -408,6 +445,7 @@ def render_chart(report):
                     # Generate a unique key for this chart
                     df_hash = hash(str(df_copy.shape) + str(df_copy.columns.tolist()) + str(report['REPORT_ID']))
                     widget_key = f"chart9_select_{df_hash}"
+                    color_widget_key = f"chart9_color_select_{df_hash}"
                     
                     # Initialize the session state value if it doesn't exist
                     if widget_key not in st.session_state:
@@ -416,19 +454,40 @@ def render_chart(report):
                     elif st.session_state[widget_key] not in text_cols:
                         st.session_state[widget_key] = text_cols[0]
                     
-                    # Get the selected column from session state
-                    selected_text_col = st.selectbox(
-                        "Select column for X-axis:",
-                        options=text_cols,
-                        index=text_cols.index(st.session_state[widget_key]),
-                        key=widget_key
-                    )
+                    # Initialize the color selector session state value
+                    if color_widget_key not in st.session_state:
+                        st.session_state[color_widget_key] = text_cols[0]
+                    # If the value exists but is not in text_cols (changed data), reset it
+                    elif st.session_state[color_widget_key] not in text_cols:
+                        st.session_state[color_widget_key] = text_cols[0]
                     
-                    # Create the bar chart with the selected text column
+                    # Create columns for the dropdown selectors
+                    col1, col2 = st.columns(2)
+                    
+                    # Get the selected column for x-axis from session state
+                    with col1:
+                        selected_text_col = st.selectbox(
+                            "Select column for X-axis:",
+                            options=text_cols,
+                            index=text_cols.index(st.session_state[widget_key]),
+                            key=widget_key
+                        )
+                    
+                    # Get the selected column for color from session state
+                    with col2:
+                        selected_color_col = st.selectbox(
+                            "Select column for Color:",
+                            options=text_cols,
+                            index=text_cols.index(st.session_state[color_widget_key]),
+                            key=color_widget_key
+                        )
+                    
+                    # Create the bar chart with the selected text column and color column
                     chart = alt.Chart(df_copy).mark_bar().encode(
                         x=alt.X(f"{selected_text_col}:N", sort='-y'),
-                        y=alt.Y(f"{numeric_col}:Q"),
-                        tooltip=[selected_text_col, numeric_col]
+                        y=alt.Y(f"{numeric_col}:Q", stack='zero'),
+                        color=alt.Color(f"{selected_color_col}:N", title=selected_color_col),
+                        tooltip=[selected_text_col, selected_color_col, numeric_col]
                     ).properties(title=report['REPORT_NAME'])
                     
                     return chart
@@ -673,7 +732,10 @@ def main():
                                     with chart_container:
                                         # Generate the chart
                                         chart = render_chart(report)
-                                        if chart:
+                                        if chart == "__KPI_RENDERED__":
+                                            # KPI tiles were already rendered by the render_chart function
+                                            pass  # No need to do anything additional
+                                        elif chart:
                                             st.altair_chart(chart, use_container_width=True)
             else:
                 st.info("No reports found with the selected IDs.")
