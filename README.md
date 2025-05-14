@@ -51,3 +51,7 @@ In the table at the bottom is a list of every report saved.  Tick the box for th
 Run the App.  
 
 Reach out to stephen.weingartner@snowflake.com with any issues.  
+
+### Version History
+V1. 25 - Apr - Initial release
+V2. All the python scripts were modified to support one more chart (i.e. 10 which supports KPI's) This appears when there is one row of data to show up to four KPI's for up to four numeric columns.  Also fixed Chart 9 which was always a single color.  Now the user can select both the x axis and also the color for the stacked bar stripes.  
