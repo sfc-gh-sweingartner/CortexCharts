@@ -1,6 +1,10 @@
 # Improved Charts for Cortex Analyst
 
-##This Streamlit in Snowflake app allows you to ask questions to Semantic Models in Snowflake.  You will receive nice looking charts and can assemble them into dashboards
+##CortexCharts is a Streamlit in Snowflake app that offers an intuitive interface for creating and managing various types of charts and visualizations against Cortex Analyst. This tool is perfect for data analysts and business users who want to use Text 2 SQL to create compelling visual representations of their data.
+
+This V2 and does not include mapping capabilites.  You can find the newer V3 project here:  
+https://github.com/sfc-gh-sweingartner/CortexChartsV3/tree/main
+
 
 ### App Description & Usage
 This solution is an uplift to the out of the box exmample Cortex Analyst Streamlit in Snowflake chatbot as found here:  https://quickstarts.snowflake.com/guide/getting_started_with_cortex_analyst/index.html?index=..%2F..index#0   The largest flaw of that solution is that when you ask a question, you get data in a table fine but the charts rarely work well.   
