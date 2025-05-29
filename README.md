@@ -2,8 +2,8 @@
 
 ##CortexCharts is a Streamlit in Snowflake app that offers an intuitive interface for creating and managing various types of charts and visualizations against Cortex Analyst. This tool is perfect for data analysts and business users who want to use Text 2 SQL to create compelling visual representations of their data.
 
-This V2 and does not include mapping capabilites.  You can find the newer V3 project here:  
-https://github.com/sfc-gh-sweingartner/CortexChartsV3/tree/main
+This V2 and does not include mapping capabilites nor semantic model selection.  You can find the latest V4 project here:  
+https://github.com/sfc-gh-sweingartner/CortexChartsV4
 
 
 ### App Description & Usage
